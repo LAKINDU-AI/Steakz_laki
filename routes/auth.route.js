@@ -1,8 +1,9 @@
 const router = require('express').Router();
+exports.router = router;
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+exports.prisma = prisma;
 const passport = require('passport');
-const bcrypt = require('bcrypt');
 const connectEnsure = require('connect-ensure-login');
 
 
@@ -30,46 +31,6 @@ router.get(
     connectEnsure.ensureLoggedOut({redirectTo: '/'}), 
     async (req, res, next) => {
     res.render('register');
-});
-
-router.post(
-    '/register', 
-    connectEnsure.ensureLoggedOut({redirectTo: '/'}), 
-    async (req, res, next) => {
-  try {
-    const { email, password, password2 } = req.body;
-
-    if (password !== password2) {
-      req.flash('error', 'Passwords do not match');
-      return res.redirect('/auth/register');
-    }
-
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-
-    if (existingUser) {
-      req.flash('warning', 'Username/email already exists');
-      return res.redirect('/auth/register');
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const branch = await prisma.branch.findUnique({ where: { id: 1 } });
-
-    const newUser = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        role: 'WAITER',
-        Branch: { connect: { id: 1 } },
-      },
-    });
-
-    req.flash('success', 'Registration successful. You can now login.');
-    res.redirect('/auth/login');
-  } catch (error) {
-    console.error(error);
-    next(error);
-  }
 });
 
 router.get(
